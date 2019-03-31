@@ -6,6 +6,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <ncurses.h>
 
 /////// RELATED IN NEXT ASSIGNMENT FUNCTIONS //////
@@ -76,16 +77,16 @@ int main(int argc, char *argv[]){
         if((char)input.data == '\n'){
             // get message from input box
             time_t now;
+            struct message *msg = (struct message *)malloc(sizeof(struct message));
             time(&now);
-            struct message msg = {
-                .sender    = input.user,
-                .timestamp = now,
-            };
-            memcpy(msg.data, screen_input.buffer, sizeof(msg.data));
+            msg->sender = input.user;
+            msg->timestamp = now;
+            memcpy(msg->data, screen_input.buffer, sizeof(msg->data));
             // update the output screen
-            screen_output.s_op->loop(&screen_output, (void *)&msg);
+            screen_output.s_op->loop(&screen_output, (void *)msg);
             // clear the input screen
             screen_input.s_op->loop(&screen_input, (void *)&input);
+            free(msg);
         } else {
             // update the input screen
             screen_input.s_op->loop(&screen_input, (void *)&input);
