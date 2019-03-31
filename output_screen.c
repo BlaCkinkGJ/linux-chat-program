@@ -4,6 +4,7 @@
 
 #define DEFAULT 0
 #define window_border_clear(win) wborder(win, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+#define OUTPUT_BOX_NAME "output"
 
 static uint64_t max_output_line;
 
@@ -27,7 +28,6 @@ struct screen output_screen (struct window_size size) {
 }
 
 void output_init(struct screen* screen) {
-    WINDOW *window = screen->window;
     int height     = screen->size.height;
     int width      = screen->size.width;
     int index      = 0;
@@ -45,19 +45,20 @@ void output_init(struct screen* screen) {
         screen->buffer[index][0] = '\0';
     }
 
-    window = newwin(height, width, start.y, start.x);
-    box(window, DEFAULT, DEFAULT);
-    wrefresh(window);
+    screen->window = newwin(height, width, start.y, start.x);
+    box(screen->window, DEFAULT, DEFAULT);
+    mvwprintw(screen->window, 0, 1, OUTPUT_BOX_NAME);
+    wrefresh(screen->window);
 }
 
 // get message line which not empty
 static inline uint64_t
 check_msg_line(const char **data){
     uint64_t line_size;
-    for (line_size = 0; line_size < MAX_MESSAGE_LINE;) {
-        if ( data[line_size++][0] == '\0') break;
+    for (line_size = 0; line_size < MAX_MESSAGE_LINE; line_size++) {
+        if ( data[line_size][0] == '\0') break;
     }
-    return line_size;
+    return line_size + 1;
 }
 
 // move the message to top of screen
@@ -70,9 +71,13 @@ __make_empty_lines__(char **screen_buffer) {
         strcpy(prev, cur);
     }
     // clear the last line
-    strcpy(screen_buffer[index], "\0");
+    strcpy(screen_buffer[index - 1], "\0");
 }
 
+/*
+ * Why I made the this function?
+ * Because output box have to make some place to put the message data
+ */
 static inline void
 make_empty_lines(char **screen_buffer, uint64_t num_of_line) {
     uint64_t index = 0;
@@ -81,11 +86,17 @@ make_empty_lines(char **screen_buffer, uint64_t num_of_line) {
 }
 
 static inline void
-push_the_message(char **screen_buffer, char **data, uint64_t num_of_line) {
+push_the_message(char **screen_buffer, struct message* msg, uint64_t num_of_line) {
     uint64_t index = 0;
+    uint64_t screen_loc = 0;
+    char** data = (char **)msg->data;
     for(;index < num_of_line; index++){
-        uint64_t screen_loc = max_output_line - index - 1;
-        strcpy(screen_buffer[screen_loc], data[index]);
+        screen_loc = max_output_line - (num_of_line - index + 1);
+        if(index == 0){
+            sprintf(screen_buffer[screen_loc+1],">> sender: %s", msg->sender.name);
+        } else {
+            strcpy(screen_buffer[screen_loc+1], data[index - 1]);
+        }
     }
 }
 
@@ -94,7 +105,7 @@ print_the_screen(struct screen* screen) {
     int index = 0;
     for(; index < max_output_line; index++) {
         // sequence ==> y, x, data
-        mvwprintw(screen->window, index + 1, index, "%s", screen->buffer[index]);
+        mvwprintw(screen->window, index + 1, 1, "%s", screen->buffer[index]);
     }
 }
 
@@ -103,10 +114,11 @@ void output_loop(struct screen* screen, void* data) {
     uint64_t msg_line = check_msg_line((const char **)(msg->data));
     wclear(screen->window);
     make_empty_lines(screen->buffer, msg_line);
-    push_the_message(screen->buffer, (char **)(msg->data), msg_line);
+    push_the_message(screen->buffer, msg, msg_line);
     print_the_screen(screen);
 
     box(screen->window, 0, 0);
+    mvwprintw(screen->window, 0, 1, OUTPUT_BOX_NAME);
     wrefresh(screen->window);
 }
 

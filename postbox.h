@@ -1,14 +1,13 @@
 #ifndef __POSTBOX_H__
 #define __POSTBOX_H__
 
-#include "msg_rb.h"
 #include "screen.h"
 #include <stdbool.h>
 
+// this for share memory
 struct postbox {
-    struct msg_rb msg_box[MAX_USER_SIZE];
-    bool          is_user_box_used[MAX_USER_SIZE]; // index means user id
-    struct user   user_box[MAX_USER_SIZE];
+    char output [MAX_OUTPUT_LINE][MAX_OUTPUT_WIDTH];
+    char user   [MAX_USER_LINE][MAX_USER_WIDTH];
 };
 
 #endif

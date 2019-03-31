@@ -9,6 +9,4 @@ void input_init(struct screen* screen);
 void input_loop(struct screen* screen, void *data);
 void input_close(struct screen* screen);
 
-void set_cursor_pos(const struct point new_pos);
-
 #endif

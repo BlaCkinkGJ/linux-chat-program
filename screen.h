@@ -7,10 +7,14 @@
 #include <ncurses.h>
 
 
-#define MAX_USER_WIDTH 27
-#define MAX_USER_SIZE 64
 #define MAX_MESSAGE_LINE 3
 #define MAX_MESSAGE_WIDTH 51
+
+#define MAX_OUTPUT_LINE 17 
+#define MAX_OUTPUT_WIDTH 51
+
+#define MAX_USER_LINE  22
+#define MAX_USER_WIDTH 27
 
 typedef int std_input;
 
@@ -38,9 +42,10 @@ struct message {
 
 struct screen_raw_input {
     struct user user;
-    char        data;
+    std_input   data;
 };
 
+// For use overriding
 struct screen_operation {
     void    (*init)  (struct screen* screen);
     void    (*loop)  (struct screen* screen, void* data);
@@ -50,9 +55,13 @@ struct screen_operation {
 struct screen {
     WINDOW                  *window;
     struct window_size      size;
-    std_input               input;
     struct screen_operation *s_op;
     char                    **buffer;
 };
 
+static inline void
+clear_buffer(char **buffer, const int size){
+    for(int i = 0; i < size; i++)
+        buffer[i][0] = '\0';
+}
 #endif
