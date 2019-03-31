@@ -1,7 +1,7 @@
 #ifndef __MSG_RB_H__
 #define __MSG_RB_H__
 
-#include "../screen/screen.h"
+#include "screen.h"
 
 #define MAX_RING_BUFFER_SIZE MAX_USER_SIZE
 #define INVALID_MESSAGE_STRUCT 0

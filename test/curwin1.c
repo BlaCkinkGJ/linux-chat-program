@@ -26,46 +26,53 @@ int main(int argc, char *argv[]) {
     WINDOW *my_window;
     struct rectangle win_size;
     std_input input;
+    int x = 1;
+    int y = 1;
+    char buffer[3][51];
 
     initscr(); // start curses mode
     cbreak(); // line buffering disabled
     
     keypad(stdscr, TRUE);
 
-    win_size.height = 3;
-    win_size.width = 10;
+    win_size.height = 5;
+    win_size.width = 52;
     win_size.start.y = (LINES - win_size.height) / 2; // calculating for a center placement
     win_size.start.x = (COLS - win_size.width) / 2;
 
     printw("Press F1 to exit");
     refresh();
     noecho();
+    curs_set(0);
 
     my_window = create_new_window(win_size);
 
+    buffer[0][0] = '\0';
+    buffer[1][0] = '\0';
+    buffer[2][0] = '\0';
     while((input = getch()) != KEY_F(1)) {
-        clear();
         refresh();
-        char buffer[256];
-        if(IS_VALID(input)){
-            destroy_window(my_window);
-            switch (input) {
-                case KEY_LEFT:
-                win_size.start.x--;
-                break;
-                case KEY_RIGHT:
-                win_size.start.x++;
-                break;
-                case KEY_DOWN:
-                win_size.start.y++;
-                break;
-                case KEY_UP:
-                win_size.start.y--;
-                break;
+        box(my_window, 0, 0);
+        if('A' <= (char)input <= 'z'){
+            if ( x < win_size.width - 1){
+                buffer[y-1][x-1] = (char)input;
+                buffer[y-1][x] = (char)'\0';
+                x++;
+                //mvwprintw(my_window,y,x++, "%c", (char)input);
             }
+            else{
+                if ( y < win_size.height - 2) { 
+                    x = 1;
+                    y = y + 1;
+                    buffer[y-1][x-1] = (char)input;
+                    buffer[y-1][x] = (char)'\0';
+                    //mvwprintw(my_window,y,x, "%c", (char)input);
+                }
+            }
+            mvwprintw(my_window, 1, 1, "%s", buffer[0]);
+            mvwprintw(my_window, 2, 1, "%s", buffer[1]);
+            mvwprintw(my_window, 3, 1, "%s", buffer[2]);
         }
-        my_window = create_new_window(win_size);
-        mvwprintw(my_window,1,1, "%c", (char)input);
         wrefresh(my_window);
         wclear(my_window);
     }

@@ -1,8 +1,8 @@
 #ifndef __POSTBOX_H__
 #define __POSTBOX_H__
 
-#include "util/msg_rb.h"
-#include "screen/screen.h"
+#include "msg_rb.h"
+#include "screen.h"
 #include <stdbool.h>
 
 struct postbox {
