@@ -53,5 +53,3 @@ dkms.conf
 
 # Directory
 .vscode/
-test/
-util/
