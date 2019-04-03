@@ -40,17 +40,24 @@ void mainsetup();
 void mainloop();
 void mainend();
 
-void get_post(struct postbox* post, char **output, char **user);
+bool get_post(struct postbox* post, char **output, char **user);
 void put_post(struct postbox* post, char **output, char **user);
 
 int main(int argc, char *argv[]){
 
     ////// INITIALIZATION PART /////
-    mainsetup();
+    mainsetup(argc, argv);
 
     ///// MAIN RUNNING LOOP /////
-    while((input.data = getch()) != KEY_F(1)){
-        mainloop();
+    while(input.data != KEY_F(1)){
+        static bool is_change = false;
+        is_change = get_post(&post, screen_output.buffer, screen_user.buffer);
+        if(kbhit()) {
+            input.data = getch();
+            mainloop();
+        }
+        if (is_change == true)
+            screen_output.s_op->loop(&screen_output, NULL);
     }
 
     mainend();
@@ -59,14 +66,22 @@ int main(int argc, char *argv[]){
 }
 
 // get data from the local
-void get_post(struct postbox* post, char **output, char **user) {
+bool get_post(struct postbox* post, char **output, char **user) {
     int index = 0;
+    bool is_change = false;
     for(index = 0; index < MAX_OUTPUT_LINE; index++){
-        strcpy(output[index], post->output[index]);
+        if (strcmp(output[index], post->output[index]) != 0){
+            is_change |= true;
+            strcpy(output[index], post->output[index]);
+        }
     }
     for(index = 0; index < MAX_USER_LINE; index++){
-        strcpy(user[index], post->user[index]);
+        if (strcmp(user[index], post->user[index]) != 0){
+            is_change |= true;
+            strcpy(user[index], post->user[index]);
+        }
     }
+    return is_change;
 }
 
 // put data to post structure
@@ -80,7 +95,7 @@ void put_post(struct postbox* post, char **output, char **user) {
     }
 }
 
-void mainsetup() {
+void mainsetup(int argc, char *argv[]) {
     initscr();
     cbreak();
 
@@ -109,7 +124,6 @@ void mainsetup() {
 
 void mainloop() {
     // 'get_post' is function for next assignment
-    get_post(&post, screen_output.buffer, screen_user.buffer);
     if((char)input.data == '\n'){
         // get message from input box
         time_t now;
@@ -122,19 +136,19 @@ void mainloop() {
         screen_output.s_op->loop(&screen_output, (void *)msg);
         // clear the input screen
         screen_input.s_op->loop(&screen_input, (void *)&input);
+        put_post(&post, screen_output.buffer, screen_user.buffer);
         free(msg);
     } else {
         // update the input screen
         screen_input.s_op->loop(&screen_input, (void *)&input);
     }
     // 'put_post' is function for next assignment
-    put_post(&post, screen_output.buffer, screen_user.buffer);
 }
 
 void mainend() {
-    endwin();
     screen_output.s_op->close(&screen_output);
     screen_input.s_op->close(&screen_input);
-    screen_user.s_op->close(&screen_input);
+    screen_user.s_op->close(&screen_user);
+    endwin();
 }
 

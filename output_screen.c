@@ -110,11 +110,13 @@ print_the_screen(struct screen* screen) {
 }
 
 void output_loop(struct screen* screen, void* data) {
-    struct message *msg = (struct message *)data;
-    uint64_t msg_line = check_msg_line((const char **)(msg->data));
     wclear(screen->window);
-    make_empty_lines(screen->buffer, msg_line);
-    push_the_message(screen->buffer, msg, msg_line);
+    if (data != NULL){
+        struct message *msg = (struct message *)data;
+        uint64_t msg_line = check_msg_line((const char **)(msg->data));
+        make_empty_lines(screen->buffer, msg_line);
+        push_the_message(screen->buffer, msg, msg_line);
+    }
     print_the_screen(screen);
 
     box(screen->window, 0, 0);

@@ -4,7 +4,9 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <time.h>
-#include <ncurses.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdbool.h>
 
 
 #define MAX_MESSAGE_LINE 3
@@ -63,5 +65,24 @@ static inline void
 clear_buffer(char **buffer, const int size){
     for(int i = 0; i < size; i++)
         buffer[i][0] = '\0';
+}
+
+static inline bool 
+kbhit(void){
+    int ch;
+    bool ret;
+
+    nodelay(stdscr, TRUE);
+
+    ch = getch();
+    if ( ch == ERR ) {
+        ret = false;
+    } else {
+        ret = true;
+        ungetch(ch);
+    }
+
+    nodelay(stdscr, FALSE);
+    return ret;
 }
 #endif
