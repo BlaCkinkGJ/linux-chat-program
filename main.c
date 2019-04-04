@@ -65,18 +65,21 @@ int main(int argc, char *argv[]){
         if ( proc_id == 0 ) {
             while(post->user_counter != 0);
             shmctl(shm_id, IPC_RMID, 0);
+            sem_destroy(&post->sem);
             exit(0);
         }
     }
 
 
     mainsetup(argc, argv);
+    sem_wait(&post->sem);
     if(set_user_id(post, input.user.name) == -1){
         fprintf(stderr, "Cannot assign user... User is full!!");
         mainend();
         post->user_counter -= 1;
         return -1;
     }
+    sem_post(&post->sem);
     get_post(post, screen_output.buffer, screen_user.buffer);
     screen_output.s_op->loop(&screen_output, NULL);
     screen_user.s_op->loop(&screen_user, NULL);
@@ -95,10 +98,12 @@ int main(int argc, char *argv[]){
         }
     }
 
+    sem_wait(&post->sem);
     remove_user_id(post);
     mainend();
 
     post->user_counter -= 1;
+    sem_post(&post->sem);
 
     return 0;
 }
@@ -109,6 +114,10 @@ void initpostbox(struct postbox *post){
     for(index = 0; index < MAX_MESSAGE_LINE; index++) {
         post->user[index].id = INVALID_USER_ID;
         post->user_login[index] = false;
+    }
+    if (sem_init(&post->sem, 0, 1) == -1) { 
+        perror("Cannot make the semaphore");
+        exit(-1);
     }
 }
 
@@ -157,9 +166,11 @@ void mainsetup(int argc, char *argv[]) {
 void mainloop() {
     // 'get_post' is function for next assignment
     if((char)input.data == '\n'){
+        sem_wait(&post->sem);
         // get message from input box
         time_t now;
         struct message *msg = (struct message *)malloc(sizeof(struct message));
+        get_post(post, screen_output.buffer, screen_user.buffer);
         time(&now);
         msg->sender = input.user;
         msg->timestamp = now;
@@ -170,6 +181,7 @@ void mainloop() {
         screen_input.s_op->loop(&screen_input, (void *)&input);
         put_post(post, screen_output.buffer, screen_user.buffer);
         free(msg);
+        sem_post(&post->sem);
     } else {
         // update the input screen
         screen_input.s_op->loop(&screen_input, (void *)&input);

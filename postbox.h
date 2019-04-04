@@ -4,6 +4,7 @@
 #include "screen.h"
 #include <stdbool.h>
 #include <string.h>
+#include <semaphore.h>
 
 #define INVALID_USER_ID 0
 // set the flag and copy the post data
@@ -36,13 +37,16 @@
         strcpy(dst[index], src[index]);\
 }while(0)
 
-// this for share memory
+// main structure for shared memory
 struct postbox {
     uint64_t    user_counter;
     char        output [MAX_OUTPUT_LINE][MAX_OUTPUT_WIDTH];
     struct user user   [MAX_USER_LINE];
     bool        user_login[MAX_USER_LINE];
+    sem_t       sem;
 };
+
+
 
 static inline void arrange_user(struct postbox* post) {
     int index, bubble;
