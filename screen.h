@@ -33,6 +33,7 @@ struct window_size {
 };
 
 struct user {
+    uint64_t  id;
     char      name[MAX_USER_WIDTH];
 };
 

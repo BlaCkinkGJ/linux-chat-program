@@ -78,10 +78,12 @@ print_the_screen(struct screen* screen) {
 }
 
 void user_loop(struct screen* screen, void* data) {
-    struct user *usr = (struct user *)data;
-    uint64_t usr_line = check_msg_line((const char **)(screen->buffer));
     wclear(screen->window);
-    push_the_user(screen->buffer, usr, usr_line);
+    if (data != NULL) {
+        struct user *usr = (struct user *)data;
+        uint64_t usr_line = check_msg_line((const char **)(screen->buffer));
+        push_the_user(screen->buffer, usr, usr_line);
+    }
     print_the_screen(screen);
 
     box(screen->window, 0, 0);

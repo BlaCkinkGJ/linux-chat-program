@@ -111,7 +111,7 @@ print_the_screen(struct screen* screen) {
 
 void output_loop(struct screen* screen, void* data) {
     wclear(screen->window);
-    if (data != NULL){
+    if (data != NULL) {
         struct message *msg = (struct message *)data;
         uint64_t msg_line = check_msg_line((const char **)(msg->data));
         make_empty_lines(screen->buffer, msg_line);
