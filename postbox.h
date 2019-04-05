@@ -20,7 +20,6 @@ struct postbox {
 };
 
 // set the flag and copy the post data
-// usage:  set_flag_and_copy_post(is_change, MAX_OUTPUT_LINE, output, post->output);
 static inline void
 set_flag_and_copy_post (int flag, bool *is_change, size_t max_size, 
         struct postbox *post, char **buffer) {
