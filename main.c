@@ -133,7 +133,7 @@ bool get_post(struct postbox *post, char **output, char **user) {
         prev_counter = post->user_counter;
     }
     set_flag_and_copy_post(COPY_MESSAGE, &is_change, MAX_OUTPUT_LINE, post, output);
-    set_flag_and_copy_post(COPY_USER, &is_change, MAX_OUTPUT_LINE, post, user);
+    set_flag_and_copy_post(COPY_USER, &is_change, MAX_USER_LINE, post, user);
     return is_change;
 }
 
