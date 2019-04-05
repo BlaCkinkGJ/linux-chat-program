@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <semaphore.h>
 #include <time.h>
 #include <ctype.h>
 #include <string.h>
@@ -79,11 +80,9 @@ int main(int argc, char *argv[]){
         post->user_counter -= 1;
         return -1;
     }
-    sem_post(&post->sem);
-    get_post(post, screen_output.buffer, screen_user.buffer);
     screen_output.s_op->loop(&screen_output, NULL);
     screen_user.s_op->loop(&screen_user, NULL);
-    put_post(post, screen_output.buffer, screen_user.buffer);
+    sem_post(&post->sem);
     ///// MAIN RUNNING LOOP /////
     while(input.data != KEY_F(1)){
         static bool is_change = false;
@@ -111,7 +110,7 @@ int main(int argc, char *argv[]){
 void initpostbox(struct postbox *post){
     int index = 0;
     post->user_counter = 1;
-    for(index = 0; index < MAX_MESSAGE_LINE; index++) {
+    for(index = 0; index < MAX_USER_LINE; index++) {
         post->user[index].id = INVALID_USER_ID;
         post->user_login[index] = false;
     }
@@ -129,14 +128,14 @@ bool get_post(struct postbox *post, char **output, char **user) {
         is_change |= true;
         prev_counter = post->user_counter;
     }
-    set_flag_and_copy_post_msg(is_change, MAX_OUTPUT_LINE, output, post->output);
-    set_flag_and_copy_post_usr(is_change, MAX_USER_LINE, user, post->user);
+    set_flag_and_copy_post(COPY_MESSAGE, &is_change, MAX_OUTPUT_LINE, post, output);
+    set_flag_and_copy_post(COPY_USER, &is_change, MAX_USER_LINE, post, user);
     return is_change;
 }
 
 // put data to post structure
 void put_post(struct postbox *post, char **output, char **user) {
-    copy_msg_data(MAX_OUTPUT_LINE, post->output, output);
+    copy_data(MAX_OUTPUT_LINE, post, output);
 }
 
 void mainsetup(int argc, char *argv[]) {
