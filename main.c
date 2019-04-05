@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ncurses.h>
+#include <pwd.h>
 
 struct postbox *post;
 
@@ -49,6 +50,15 @@ void mainend();
 bool get_post(struct postbox *post, char **output, char **user);
 void put_post(struct postbox *post, char **output, char **user);
 
+int get_user_name(char *buf, size_t size){
+    struct passwd *pw;
+    uid_t uid;
+
+    uid = getuid();
+    pw = getpwuid(uid);
+    return snprintf(buf, size, "%s", pw->pw_name);
+}
+
 int main(int argc, char *argv[]){
     key_t key = ftok(".", 201424494);
     int shm_id;
@@ -62,8 +72,9 @@ int main(int argc, char *argv[]){
     } else {
         pid_t proc_id = fork();
         post = (struct postbox*)shmat(shm_id, 0, 0);
-        initpostbox(post);
         if ( proc_id == 0 ) {
+            sem_init(&post->sem, 0, 1);
+            initpostbox(post);
             while(post->user_counter != 0);
             shmctl(shm_id, IPC_RMID, 0);
             sem_destroy(&post->sem);
@@ -71,9 +82,9 @@ int main(int argc, char *argv[]){
         }
     }
 
-
-    mainsetup(argc, argv);
+    while(post->user_counter == 0);
     sem_wait(&post->sem);
+    mainsetup(argc, argv);
     if(set_user_id(post, input.user.name) == -1){
         fprintf(stderr, "Cannot assign user... User is full!!");
         mainend();
@@ -117,10 +128,6 @@ void initpostbox(struct postbox *post){
         post->user[index].id = INVALID_USER_ID;
         post->user_login[index] = false;
     }
-    if (sem_init(&post->sem, 0, 1) == -1) { 
-        perror("Cannot make the semaphore");
-        exit(-1);
-    }
 }
 
 static uint64_t prev_counter = 0;
@@ -162,7 +169,7 @@ void mainsetup(int argc, char *argv[]) {
     if(argc > 1)
         strcpy((char*)(input.user.name), argv[1]);
     else
-        gethostname((char*)(input.user.name),sizeof(char)*MAX_USER_WIDTH);
+        get_user_name((char*)(input.user.name),sizeof(char)*MAX_USER_WIDTH);
 }
 
 int mainloop() {
