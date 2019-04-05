@@ -3,6 +3,7 @@
 #include "input.h"
 #include "user.h"
 #include "postbox.h"
+#include "sys_V_semaphore.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]){
     int shm_id;
 
     shm_id = shmget(key, sizeof(struct postbox), IPC_CREAT | IPC_EXCL | 0666);
+   
 
     if(shm_id < 0) {
         shm_id = shmget(key, sizeof(struct postbox), 0666);
@@ -70,20 +72,20 @@ int main(int argc, char *argv[]){
         }
     }
 
+    if(sem_init(&post->sem, key) == -1){
+        if(sem_open(&post->sem, key) == -1){
+            goto ERROR;
+        }
+    }
 
     mainsetup(argc, argv);
     sem_wait(&post->sem);
     if(set_user_id(post, input.user.name) == -1){
-        fprintf(stderr, "Cannot assign user... User is full!!");
-        mainend();
-        post->user_counter -= 1;
-        return -1;
+        goto ERROR;
     }
-    sem_post(&post->sem);
-    get_post(post, screen_output.buffer, screen_user.buffer);
     screen_output.s_op->loop(&screen_output, NULL);
     screen_user.s_op->loop(&screen_user, NULL);
-    put_post(post, screen_output.buffer, screen_user.buffer);
+    sem_post(&post->sem);
     ///// MAIN RUNNING LOOP /////
     while(input.data != KEY_F(1)){
         static bool is_change = false;
@@ -106,18 +108,19 @@ int main(int argc, char *argv[]){
     sem_post(&post->sem);
 
     return 0;
+ERROR:
+    mainend();
+    fprintf(stderr, "Error Occurred!!");
+    post->user_counter -= 1;
+    return -1;
 }
 
 void initpostbox(struct postbox *post){
     int index = 0;
     post->user_counter = 1;
-    for(index = 0; index < MAX_MESSAGE_LINE; index++) {
+    for(index = 0; index < MAX_USER_LINE; index++) {
         post->user[index].id = INVALID_USER_ID;
         post->user_login[index] = false;
-    }
-    if (sem_init(&post->sem, 0, 1) == -1) { 
-        perror("Cannot make the semaphore");
-        exit(-1);
     }
 }
 
@@ -129,14 +132,14 @@ bool get_post(struct postbox *post, char **output, char **user) {
         is_change |= true;
         prev_counter = post->user_counter;
     }
-    set_flag_and_copy_post_msg(is_change, MAX_OUTPUT_LINE, output, post->output);
-    set_flag_and_copy_post_usr(is_change, MAX_USER_LINE, user, post->user);
+    set_flag_and_copy_post(COPY_MESSAGE, &is_change, MAX_OUTPUT_LINE, post, output);
+    set_flag_and_copy_post(COPY_USER, &is_change, MAX_OUTPUT_LINE, post, user);
     return is_change;
 }
 
 // put data to post structure
 void put_post(struct postbox *post, char **output, char **user) {
-    copy_msg_data(MAX_OUTPUT_LINE, post->output, output);
+    copy_data(MAX_OUTPUT_LINE, post, output);
 }
 
 void mainsetup(int argc, char *argv[]) {

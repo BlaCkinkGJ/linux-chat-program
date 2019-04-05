@@ -4,38 +4,11 @@
 #include "screen.h"
 #include <stdbool.h>
 #include <string.h>
-#include <semaphore.h>
 
 #define INVALID_USER_ID 0
-// set the flag and copy the post data
-// usage:  set_flag_and_copy_post(is_change, MAX_OUTPUT_LINE, output, post->output);
-#define set_flag_and_copy_post_msg(is_change, max_size, dst, src) do{\
-    int index = 0;\
-    for(index = 0; index < max_size; index++) {\
-        if(strcmp(dst[index], src[index]) != 0) {\
-            is_change |= true;\
-            strcpy(dst[index], src[index]);\
-        }\
-    }\
-}while(0)
 
-#define set_flag_and_copy_post_usr(is_change, max_size, dst, src) do{\
-    int index = 0;\
-    for(index = 0; index < max_size; index++) {\
-        if(((src)[index].id != INVALID_USER_ID) && (strcmp(dst[index], (src)[index].name) != 0)) {\
-            is_change |= true;\
-            strcpy(dst[index], (src)[index].name);\
-        } else if((src)[index].id == INVALID_USER_ID) {\
-            strcpy(dst[index], "\0");\
-        }\
-    }\
-}while(0)
-
-#define copy_msg_data(max_size, dst, src) do{\
-    int index = 0;\
-    for(index = 0; index < max_size; index++)\
-        strcpy(dst[index], src[index]);\
-}while(0)
+#define COPY_MESSAGE    0
+#define COPY_USER       1
 
 // main structure for shared memory
 struct postbox {
@@ -43,10 +16,43 @@ struct postbox {
     char        output [MAX_OUTPUT_LINE][MAX_OUTPUT_WIDTH];
     struct user user   [MAX_USER_LINE];
     bool        user_login[MAX_USER_LINE];
-    sem_t       sem;
+    int         sem;
 };
 
+// set the flag and copy the post data
+// usage:  set_flag_and_copy_post(is_change, MAX_OUTPUT_LINE, output, post->output);
+static inline void
+set_flag_and_copy_post (int flag, bool *is_change, size_t max_size, 
+        struct postbox *post, char **buffer) {
+    int index = 0;
+    for(index = 0; index < max_size; index++) {
+        switch(flag) {
+            case COPY_MESSAGE:
+            if(strcmp(buffer[index], post->output[index]) != 0) {
+                *is_change |= true;
+                strcpy(buffer[index], post->output[index]);
+            }
+            break;
+            case COPY_USER:
+            if((post->user[index].id != INVALID_USER_ID) 
+                && (strcmp(buffer[index], post->user[index].name) != 0)) {
+                *is_change |= true;
+                strcpy(buffer[index], post->user[index].name);
+            } else if (post->user[index].id == INVALID_USER_ID) {
+                strcpy(buffer[index], "\0");
+            }
+            break;
+        }
+    }
+}
 
+static inline void
+copy_data (size_t max_size, struct postbox *post, char **buffer) {
+    int index = 0;
+    for(index = 0; index < max_size; index++) {
+        strcpy(post->output[index], buffer[index]);
+    }
+}
 
 static inline void arrange_user(struct postbox* post) {
     int index, bubble;
