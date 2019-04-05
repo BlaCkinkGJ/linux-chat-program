@@ -43,7 +43,7 @@ struct screen_raw_input input;
 
 void initpostbox(struct postbox *post);
 void mainsetup();
-void mainloop();
+int  mainloop();
 void mainend();
 
 bool get_post(struct postbox *post, char **output, char **user);
@@ -89,7 +89,10 @@ int main(int argc, char *argv[]){
         is_change = get_post(post, screen_output.buffer, screen_user.buffer);
         if(kbhit()) {
             input.data = getch();
-            mainloop();
+            if(mainloop() == -1){
+                sem_post(&post->sem);
+                break;
+            }
         }
         if (is_change == true){
             screen_output.s_op->loop(&screen_output, NULL);
@@ -162,7 +165,7 @@ void mainsetup(int argc, char *argv[]) {
         gethostname((char*)(input.user.name),sizeof(char)*MAX_USER_WIDTH);
 }
 
-void mainloop() {
+int mainloop() {
     // 'get_post' is function for next assignment
     if((char)input.data == '\n'){
         sem_wait(&post->sem);
@@ -174,6 +177,8 @@ void mainloop() {
         msg->sender = input.user;
         msg->timestamp = now;
         memcpy(msg->data, screen_input.buffer, sizeof(msg->data));
+        if(strcmp(screen_input.buffer[0], "./bye") == 0)
+            return -1;
         // update the output screen
         screen_output.s_op->loop(&screen_output, (void *)msg);
         // clear the input screen
@@ -185,6 +190,7 @@ void mainloop() {
         // update the input screen
         screen_input.s_op->loop(&screen_input, (void *)&input);
     }
+    return 0;
     // 'put_post' is function for next assignment
 }
 
