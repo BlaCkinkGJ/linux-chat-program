@@ -60,7 +60,7 @@ int get_user_name(char *buf, size_t size){
 }
 
 int main(int argc, char *argv[]){
-    key_t key = ftok(".", 201424494);
+    key_t key = ftok(".", 1234);
     int shm_id;
 
     shm_id = shmget(key, sizeof(struct postbox), IPC_CREAT | IPC_EXCL | 0666);
